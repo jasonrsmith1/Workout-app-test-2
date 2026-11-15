@@ -82,6 +82,39 @@ button{touch-action:manipulation}
 @media (orientation:landscape) and (max-height:500px){
  .app::before{content:"For the best workout view, rotate your phone to portrait.";display:block;padding:9px 12px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;color:var(--green);font-size:13px}
 }
+
+/* Mobile fitment revision: keep controls within the viewport and make navigation thumb-friendly. */
+@media (max-width:600px){
+  .app{padding-bottom:calc(142px + env(safe-area-inset-bottom));}
+  .nav{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:8px max(10px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));}
+  .nav button{font-size:12px;min-height:43px;padding:8px 4px;line-height:1.2;}
+  .routine{flex-wrap:wrap;align-items:flex-start;}
+  .routine > div{min-width:0;max-width:100%;}
+  .routine > button{max-width:100%;white-space:normal;}
+  .row{flex-wrap:wrap;}
+  .row > *{min-width:0;}
+  .toolbar{width:100%;}
+  .toolbar button{min-height:44px;white-space:normal;}
+  .setrow{grid-template-columns:18px minmax(0,1fr) minmax(0,1fr) 78px;gap:4px;}
+  .setrow .set-actions{grid-column:auto;}
+  .setrow .set-actions button{min-width:36px;}
+  .exercise .fieldgrid{min-width:0;}
+  .card{min-width:0;overflow-wrap:anywhere;}
+}
+@media (max-width:420px){
+  .fieldgrid{grid-template-columns:minmax(0,1fr);}
+  .setrow{grid-template-columns:16px minmax(0,1fr) minmax(0,1fr) 76px;}
+  .setrow input,.setrow select{padding:9px 5px;}
+  .setrow .set-actions .status-btn{flex-basis:35px;width:35px;min-width:35px;}
+  .brand h1{font-size:16px;}
+  .chart{min-width:0;}
+}
+@media (min-width:601px) and (max-width:850px){
+  .top{flex-wrap:wrap;}
+  .nav{width:100%;justify-content:flex-start;}
+  .nav button{flex:1 1 auto;}
+  .app{padding-left:16px;padding-right:16px;}
+}
 </style><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="My Workout Plan"><meta name="mobile-web-app-capable" content="yes"><meta name="description" content="Workout routines, cardio, history and progress tracking"></head><body><div class="app"><header class="top"><div class="brand"><div class="logo">W</div><div><h1>MY WORKOUT <span style="color:var(--green)">PLAN</span></h1><small>Workbook library · 63 routines</small></div></div><nav class="nav"><button data-tab="dashboard" class="active">Overview</button><button data-tab="workouts">Workouts</button><button data-tab="history">History</button><button data-tab="progress">Progress</button><button data-tab="manage">Edit routines</button><button data-tab="settings">Settings</button></nav></header><main id="view"></main></div>
 <script>
 const CARDIO_TYPES=['Walking','Running','Treadmill','Cycling','Stationary bike','Elliptical','Stair climber','Rowing','Swimming','Hiking','Jump rope','Other'];

@@ -174,7 +174,23 @@ function newLocalId(){return (typeof crypto!=='undefined'&&typeof crypto.randomU
 function exerciseAllowed(e){const gear=inferredExerciseGear(e);const chosen=new Set(getGear());if(!gear)return chosen.has('Other');return chosen.has(gear)||(gear==='Dumbbells'&&chosen.has('Dumbbell'))||(gear==='Dumbbell'&&chosen.has('Dumbbells'))||(gear==='Kettlebell'&&chosen.has('Kettlebells'))||(gear==='Kettlebells'&&chosen.has('Kettlebell'))}
 // Workout preferences are a view filter only. Never persist filtered exercises to the routine template.
 function sessionExercisesFor(r){const original=WB.routines.find(w=>w.name===r.name);const isWorkbookRoutine=original&&r.kind!=='cardio'&&!r.originalWorkbookName;const source=isWorkbookRoutine&&original.exercises.length>r.exercises.length?original.exercises:r.exercises;return source.filter(e=>r.kind==='cardio'||exerciseAllowed(e))}
-function start(n){if(active&&!confirm('Replace the active workout? It will not be saved as completed.'))return;let r=db.routines.find(x=>x.name===decodeURIComponent(n));if(!r)return;active={id:'WA2-'+String(db.seq++).padStart(6,'0'),routine:r.name,title:r.name,sourceSheet:r.sourceSheet||r.title,bodyweight:db.bodyweight,equipment:db.equipmentByRoutine?.[r.name]||'Other',equipmentMultiplier:1,started:Date.now(),elapsedSec:0,timerRunning:false,timerStartedAt:null,kind:r.kind||'strength',exercises:sessionExercisesFor(r).map(e=>({...structuredClone(e),id:newLocalId(),equipment:e.equipment||(e.weight==='BW'?'Bodyweight':'Other'),equipmentMultiplier:1,sets:Array.from({length:e.sets||1},()=>({weight:'',reps:'',seconds:'',minutes:'',miles:'',steps:''}))}))};active.exercises.forEach(e=>e.equipmentMultiplier=equipmentForExercise(e));save();tab='workouts';showActiveWorkout=true;render();runTimer()}
+// Prefill each fresh session from the workbook target, without changing the routine template.
+function recommendedSetValues(e){
+ const raw=String(e.target||'').trim();
+ const result={weight:'',reps:'',seconds:'',minutes:'',miles:'',steps:''};
+ if(!raw)return result;
+ const range=raw.match(/(\d+(?:\.\d+)?)\s*[-–—]\s*(\d+(?:\.\d+)?)/);
+ const number=range?Number(range[1]):Number((raw.match(/\d+(?:\.\d+)?/)||[])[0]);
+ if(!Number.isFinite(number))return result;
+ const isTimed=e.mode==='time'||/\b(sec(?:onds?)?|min(?:utes?)?)\b/i.test(raw);
+ if(isTimed){
+   result.seconds=String(Math.round(number* (/\bmin(?:utes?)?\b/i.test(raw)?60:1)));
+ }else if(number>=1&&number<=50){
+   result.reps=String(Math.round(number));
+ }
+ return result;
+}
+function start(n){if(active&&!confirm('Replace the active workout? It will not be saved as completed.'))return;let r=db.routines.find(x=>x.name===decodeURIComponent(n));if(!r)return;active={id:'WA2-'+String(db.seq++).padStart(6,'0'),routine:r.name,title:r.name,sourceSheet:r.sourceSheet||r.title,bodyweight:db.bodyweight,equipment:db.equipmentByRoutine?.[r.name]||'Other',equipmentMultiplier:1,started:Date.now(),elapsedSec:0,timerRunning:false,timerStartedAt:null,kind:r.kind||'strength',exercises:sessionExercisesFor(r).map(e=>({...structuredClone(e),id:newLocalId(),equipment:e.equipment||(e.weight==='BW'?'Bodyweight':'Other'),equipmentMultiplier:1,sets:Array.from({length:e.sets||1},()=>recommendedSetValues(e))}))};active.exercises.forEach(e=>e.equipmentMultiplier=equipmentForExercise(e));save();tab='workouts';showActiveWorkout=true;render();runTimer()}
 function elapsed(){if(!active)return 0;return Math.floor((active.elapsedSec||0)+(active.timerRunning?((Date.now()-(active.timerStartedAt||Date.now()))/1000):0))}
 function startWorkoutTimer(){if(!active||active.timerRunning||active.timerStopped)return;active.timerRunning=true;active.timerStartedAt=Date.now();save();render();runTimer()}
 function pauseWorkoutTimer(){if(!active||!active.timerRunning)return;active.elapsedSec=elapsed();active.timerRunning=false;active.timerStartedAt=null;save();render();runTimer()}
@@ -192,7 +208,7 @@ function markSet(id,j,completed){if(!active)return;const e=active.exercises.find
 function completeSet(id,j){markSet(id,j,true)}
 function undoSet(id,j){if(!active)return;const e=active.exercises.find(x=>x.id===id);if(!e||!e.sets[j])return;e.sets[j].completed=false;e.sets[j].skipped=false;delete e.sets[j].completedAt;save();render()}
 function setVal(id,j,k,v){let e=active.exercises.find(x=>x.id===id);e.sets[j][k]=v;save();if(['weight','reps'].includes(k)){let x=document.querySelector('.big');if(x)x.textContent=fmt(volume(active))}}
-function addSet(id){let e=active.exercises.find(x=>x.id===id);e.sets.push({weight:'',reps:'',seconds:''});save();render()}
+function addSet(id){let e=active.exercises.find(x=>x.id===id);e.sets.push(recommendedSetValues(e));save();render()}
 function removeSet(id,j){let e=active.exercises.find(x=>x.id===id);e.sets.splice(j,1);save();render()}
 function removeExercise(id){active.exercises=active.exercises.filter(x=>x.id!==id);save();render()}
 function addExerciseToSession(){let name=prompt('Exercise name');if(!name)return;let mode=confirm('Is this a time-based movement? OK = seconds, Cancel = reps');active.exercises.push({id:newLocalId(),name,mode:mode?'time':'reps',equipment:'Other',sets:[{weight:'',reps:'',seconds:''}]});save();render()}
